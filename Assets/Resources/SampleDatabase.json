@@ -1,0 +1,41 @@
+{
+    "Databases": [
+        {
+            "Name": "DB_TEST",
+            "Schemas": [
+                {
+                    "Name": "SCHEMA_1",
+                    "Tables": [
+                        {
+                            "Name": "TABLE1",
+                            "Columns": [
+                                {
+                                    "Name": "COL1",
+                                    "DataType": "string"
+                                },
+                                {
+                                    "Name": "col2",
+                                    "DataType": "integer"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "Name": "schema2",
+                    "Tables": [
+                        {
+                            "Name": "test_table2",
+                            "Columns": [
+                                {
+                                    "Name": "col3",
+                                    "DataType": "float"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
