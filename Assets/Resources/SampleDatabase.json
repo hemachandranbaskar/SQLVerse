@@ -18,6 +18,19 @@
                                     "DataType": "integer"
                                 }
                             ]
+                        },
+                        {
+                            "Name": "Customer",
+                            "Columns": [
+                                {
+                                    "Name": "ID",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "Name",
+                                    "DataType": "String"
+                                }
+                            ]
                         }
                     ]
                 },

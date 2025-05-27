@@ -34,30 +34,36 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         {
             GameObject galaxy = new GameObject(db.Name);
             galaxy.transform.position = new Vector3(databaseIndex * galaxySpacing, 0, 0);
-            AddGalaxyParticleSystem(galaxy);
+            AddGalaxyParticleSystem(galaxy, Color.white, 50f, 2000);
             AddLabel(galaxy, db.Name, 10f);
 
             int schemaIndex = 0;
+            float schemaAngleStep = 360f / Mathf.Max(1, db.Schemas.Length);
             foreach (Schema schema in db.Schemas)
             {
-                GameObject solarSystem = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                solarSystem.name = schema.Name;
-                solarSystem.transform.localScale = Vector3.one * 5f;
-                float solarSystemDistance = 15f + schemaIndex * 10f;
-                solarSystem.transform.SetParent(galaxy.transform);
-                solarSystem.transform.localPosition = new Vector3(solarSystemDistance, 0, 0);
-                solarSystem.GetComponent<Renderer>().material.color = Color.yellow;
-                AddLabel(solarSystem, schema.Name, 2f);
+                GameObject schemaCluster = new GameObject(schema.Name);
+                schemaCluster.transform.SetParent(galaxy.transform);
+                float angle = schemaIndex * schemaAngleStep * Mathf.Deg2Rad;
+                float schemaDistance = 20f;
+                schemaCluster.transform.localPosition = new Vector3(Mathf.Cos(angle) * schemaDistance, 0, Mathf.Sin(angle) * schemaDistance);
+                AddSchemaParticleSystem(schemaCluster, GetSchemaColor(schemaIndex), 10f, 200);
+                if (useBoundarySpheres)
+                {
+                    AddBoundarySphere(schemaCluster, 15f, GetSchemaColor(schemaIndex));
+                }
+                AddLabel(schemaCluster, schema.Name, 3f);
 
                 int tableIndex = 0;
+                float tableAngleStep = 360f / Mathf.Max(1, schema.Tables.Length);
                 foreach (Table table in schema.Tables)
                 {
                     GameObject planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     planet.name = table.Name;
-                    planet.transform.localScale = Vector3.one * 3f;
-                    float planetDistance = planetSpacing + tableIndex * 5f;
-                    planet.transform.SetParent(solarSystem.transform);
-                    planet.transform.localPosition = new Vector3(planetDistance, 0, 0);
+                    planet.transform.localScale = Vector3.one * 5f; //Vector3.one * 3f;
+                    float planetAngle = tableIndex * tableAngleStep * Mathf.Deg2Rad;
+                    float planetDistance = 5f + tableIndex * 3f; ; // planetSpacing + tableIndex * 5f;
+                    planet.transform.SetParent(schemaCluster.transform);
+                    planet.transform.localPosition = new Vector3(Mathf.Cos(planetAngle) * planetDistance, 0, Mathf.Sin(planetAngle) * planetDistance);
                     planet.GetComponent<Renderer>().material.color = Color.blue;
                     planet.AddComponent<Orbiter>().orbitSpeed = 20f;
                     AddLabel(planet, table.Name, 1.5f);
@@ -85,28 +91,87 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         }
     }
 
-    private void AddGalaxyParticleSystem(GameObject galaxy)
+    private void AddGalaxyParticleSystem(GameObject galaxy, Color color, float radius, int maxParticles)
     {
         ParticleSystem ps = galaxy.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startSize = 0.1f;
         main.startSpeed = 0;
-        main.maxParticles = 2000;
-        main.startColor = Color.white;
+        main.maxParticles = maxParticles;
+        main.startColor = color;
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
 
         var emission = ps.emission;
-        emission.rateOverTime = 100;
+        emission.rateOverTime = maxParticles / 10f;
 
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 50f;
+        shape.radius = radius;
 
         var renderer = ps.GetComponent<ParticleSystemRenderer>();
-        renderer.renderMode = ParticleSystemRenderMode.Mesh;
-        renderer.mesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-        renderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
-        renderer.material.SetColor("_EmissionColor", Color.white);
+        Material material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+        material.SetFloat("_Surface", 1);
+        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        material.SetInt("_ZWrite", 0);
+        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.renderQueue = 3000;
+        material.SetColor("_BaseColor", color);
+        renderer.material = material;
+    }
+
+    private void AddSchemaParticleSystem(GameObject schema, Color color, float radius, int maxParticles)
+    {
+        ParticleSystem ps = schema.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.2f, 0.5f);
+        main.startSpeed = 0;
+        main.maxParticles = maxParticles;
+        main.startColor = new Color(color.r, color.g, color.b, 0.3f); // Semi-transparent
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+
+        var emission = ps.emission;
+        emission.rateOverTime = maxParticles / 10f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = radius;
+
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        Material material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+        material.SetFloat("_Surface", 1);
+        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        material.SetInt("_ZWrite", 0);
+        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.renderQueue = 3000;
+        material.SetColor("_BaseColor", new Color(color.r, color.g, color.b, 0.3f));
+        renderer.material = material;
+    }
+
+    private void AddBoundarySphere(GameObject schema, float radius, Color color)
+    {
+        GameObject boundary = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        boundary.name = $"{schema.name}_Boundary";
+        boundary.transform.SetParent(schema.transform);
+        boundary.transform.localPosition = Vector3.zero;
+        boundary.transform.localScale = Vector3.one * radius * 2f;
+        var renderer = boundary.GetComponent<Renderer>();
+        Material material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        material.SetFloat("_Surface", 1);
+        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        material.SetInt("_ZWrite", 0);
+        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.renderQueue = 3000;
+        material.color = new Color(color.r, color.g, color.b, 0.1f);
+        renderer.material = material;
+    }
+
+    private Color GetSchemaColor(int index)
+    {
+        Color[] colors = { new Color(0.5f, 0.2f, 1f), Color.cyan, Color.magenta, Color.yellow };
+        return colors[index % colors.Length];
     }
 
     private Color GetColorForDataType(string dataType)
