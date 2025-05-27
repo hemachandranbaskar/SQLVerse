@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 2f7a4042a470f5142befa85d5adc0ebb
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 170718
+  packageName: Simple TableUI
+  packageVersion: 1.4.0
+  assetPath: Assets/simpletableui/TableUIProject/Assets/SimpleTableUI/Scripts/TableUI_Menu.cs
+  uploadId: 668793

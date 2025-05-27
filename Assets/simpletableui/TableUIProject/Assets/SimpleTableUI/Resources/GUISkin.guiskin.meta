@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 70f74ecfa2a799246ac78dfbda33dd79
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 170718
+  packageName: Simple TableUI
+  packageVersion: 1.4.0
+  assetPath: Assets/simpletableui/TableUIProject/Assets/SimpleTableUI/Resources/GUISkin.guiskin
+  uploadId: 668793

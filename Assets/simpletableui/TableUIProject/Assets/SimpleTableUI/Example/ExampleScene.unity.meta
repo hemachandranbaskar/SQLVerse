@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 418cae37b2e03b04891c289f5fc31bdd
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 170718
+  packageName: Simple TableUI
+  packageVersion: 1.4.0
+  assetPath: Assets/simpletableui/TableUIProject/Assets/SimpleTableUI/Example/ExampleScene.unity
+  uploadId: 668793
