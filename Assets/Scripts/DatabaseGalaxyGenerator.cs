@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class DatabaseGalaxyGenerator : MonoBehaviour
 {
@@ -7,6 +8,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     [SerializeField] private bool useBoundarySpheres = false;
     [SerializeField] private bool useUniformMoonDistribution = true;
     [SerializeField] private float moonOrbitRadius = .5f;
+    [SerializeField] private Material pulsingOrbMaterial;
     private DatabaseRoot databaseRoot;
 
     void Start()
@@ -55,7 +57,8 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 sun.transform.localScale = Vector3.one * 5f;
                 sun.transform.SetParent(galaxy.transform);
                 sun.transform.localPosition = new Vector3(Mathf.Cos(angle) * schemaDistance, 0, Mathf.Sin(angle) * schemaDistance);
-                sun.GetComponent<Renderer>().material.color = Color.yellow;
+                //sun.GetComponent<Renderer>().material.color = Color.yellow;
+                sun.GetComponent<Renderer>().material = pulsingOrbMaterial;
 
                 AddSchemaParticleSystem(schemaCluster, GetSchemaColor(schemaIndex), 10f, 200);
                 if (useBoundarySpheres)
@@ -91,9 +94,19 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                         moon.transform.localScale = Vector3.one * 1f;
                         moon.transform.SetParent(planet.transform);
                         moon.transform.localPosition = moonPositions[columnIndex];
-                        moon.GetComponent<Renderer>().material.color = GetColorForDataType(column.DataType);
+                        var renderer = moon.GetComponent<Renderer>();
+                        renderer.material.color = GetColorForDataType(column.DataType);
                         moon.AddComponent<Orbiter>().orbitSpeed = 5f;
+                        if (column.IsPrimaryKey)
+                        {
+                            //SetGlowingMaterial(moon, GetColorForDataType(column.DataType));
+                            renderer.material = pulsingOrbMaterial;
+                            StartCoroutine(PulseOrb(moon));
+                            moon.name += " (Primary Key)";
+                        }
+
                         AddLabel(moon, $"{column.Name} ({column.DataType})", 0.8f);
+                        //AddLabel(moon, $"{column.Name} ({column.DataType})" + (columnIndex == 0 ? " (Primary Key)" : ""), 0.8f);
 
                         columnIndex++;
                     }
@@ -102,6 +115,38 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 schemaIndex++;
             }
             databaseIndex++;
+        }
+    }
+
+    private void SetGlowingMaterial(GameObject moon, Color baseColor)
+    {
+        var renderer = moon.GetComponent<Renderer>();
+        Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        material.SetFloat("_Surface", 1);
+        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        material.SetInt("_ZWrite", 0);
+        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.renderQueue = 3000;
+        material.SetColor("_BaseColor", baseColor);
+        material.SetColor("_EmissionColor", baseColor * 2f);
+        material.EnableKeyword("_EMISSION");
+        renderer.material = material;
+    }
+
+    private IEnumerator PulseOrb(GameObject moon)
+    {
+        var renderer = moon.GetComponent<Renderer>();
+        float pulseSpeed = 1f;
+        float minIntensity = 1f;
+        float maxIntensity = 2f;
+
+        while (true)
+        {
+            float t = Mathf.PingPong(Time.time * pulseSpeed, 1f);
+            float intensity = Mathf.Lerp(minIntensity, maxIntensity, t);
+            renderer.material.SetColor("_EmissionColor", renderer.material.GetColor("_BaseColor") * intensity);
+            yield return null;
         }
     }
 

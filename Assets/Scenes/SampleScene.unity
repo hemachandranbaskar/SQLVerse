@@ -459,6 +459,7 @@ MonoBehaviour:
   useBoundarySpheres: 1
   useUniformMoonDistribution: 1
   moonOrbitRadius: 0.8
+  pulsingOrbMaterial: {fileID: 2100000, guid: 61abcdb0124d26541b1eaedb2fb431e1, type: 2}
 --- !u!4 &1871118004
 Transform:
   m_ObjectHideFlags: 0
