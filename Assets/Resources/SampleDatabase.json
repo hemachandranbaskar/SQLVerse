@@ -11,7 +11,8 @@
                             "Columns": [
                                 {
                                     "Name": "COL1",
-                                    "DataType": "string"
+                                    "DataType": "string",
+                                    "IsPrimaryKey": true
                                 },
                                 {
                                     "Name": "col2",
@@ -24,7 +25,8 @@
                             "Columns": [
                                 {
                                     "Name": "ID",
-                                    "DataType": "integer"
+                                    "DataType": "integer",
+                                    "IsPrimaryKey": true
                                 },
                                 {
                                     "Name": "Name",
@@ -38,11 +40,76 @@
                     "Name": "schema2",
                     "Tables": [
                         {
-                            "Name": "test_table2",
+                            "Name": "test_table1",
                             "Columns": [
                                 {
                                     "Name": "col3",
                                     "DataType": "float"
+                                }
+                            ]
+                        },
+                        {
+                            "Name": "multi_table2",
+                            "Columns": [
+                                {
+                                    "Name": "col1",
+                                    "DataType": "string",
+                                    "IsPrimaryKey": true
+                                },
+                                {
+                                    "Name": "col2",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "col3",
+                                    "DataType": "float"
+                                },
+                                {
+                                    "Name": "col4",
+                                    "DataType": "boolean"
+                                }
+                            ]
+                        },
+                        {
+                            "Name": "multi_table3",
+                            "Columns": [
+                                {
+                                    "Name": "col1",
+                                    "DataType": "string",
+                                    "IsPrimaryKey": true
+                                },
+                                {
+                                    "Name": "col2",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "col3",
+                                    "DataType": "float"
+                                },
+                                {
+                                    "Name": "col4",
+                                    "DataType": "boolean"
+                                }
+                            ]
+                        },
+                        {
+                            "Name": "multi_table4",
+                            "Columns": [
+                                {
+                                    "Name": "col1",
+                                    "DataType": "string"
+                                },
+                                {
+                                    "Name": "col2",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "col3",
+                                    "DataType": "float"
+                                },
+                                {
+                                    "Name": "col4",
+                                    "DataType": "boolean"
                                 }
                             ]
                         }

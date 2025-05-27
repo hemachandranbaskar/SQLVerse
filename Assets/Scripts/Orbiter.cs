@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Orbiter : MonoBehaviour
 {
-    [SerializeField] public float orbitSpeed = 10f;
+    [SerializeField] public float orbitSpeed = 20f;
 
     void Update()
     {

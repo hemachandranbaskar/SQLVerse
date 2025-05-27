@@ -4,8 +4,10 @@ using TMPro;
 public class DatabaseGalaxyGenerator : MonoBehaviour
 {
     [SerializeField] private string jsonFileName = "SampleDatabase";
-    private DatabaseRoot databaseRoot;
     [SerializeField] private bool useBoundarySpheres = false;
+    [SerializeField] private bool useUniformMoonDistribution = true;
+    [SerializeField] private float moonOrbitRadius = .5f;
+    private DatabaseRoot databaseRoot;
 
     void Start()
     {
@@ -26,8 +28,8 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     private void GenerateGalaxy()
     {
         float galaxySpacing = 50f;
-        float moonOrbitSpacing = 0.5f;
-        float planetSpacing = 10f;
+        //float moonOrbitSpacing = 0.5f;
+        //float planetSpacing = 10f;
         int databaseIndex = 0;
 
         foreach (Database db in databaseRoot.Databases)
@@ -35,23 +37,32 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
             GameObject galaxy = new GameObject(db.Name);
             galaxy.transform.position = new Vector3(databaseIndex * galaxySpacing, 0, 0);
             AddGalaxyParticleSystem(galaxy, Color.white, 50f, 2000);
-            AddLabel(galaxy, db.Name, 10f);
+            AddLabel(galaxy, $"Database:\n{db.Name}", 10f);
 
             int schemaIndex = 0;
             float schemaAngleStep = 360f / Mathf.Max(1, db.Schemas.Length);
             foreach (Schema schema in db.Schemas)
             {
                 GameObject schemaCluster = new GameObject(schema.Name);
+                GameObject sun = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+
                 schemaCluster.transform.SetParent(galaxy.transform);
                 float angle = schemaIndex * schemaAngleStep * Mathf.Deg2Rad;
                 float schemaDistance = 20f;
                 schemaCluster.transform.localPosition = new Vector3(Mathf.Cos(angle) * schemaDistance, 0, Mathf.Sin(angle) * schemaDistance);
+
+                sun.name = schema.Name;
+                sun.transform.localScale = Vector3.one * 5f;
+                sun.transform.SetParent(galaxy.transform);
+                sun.transform.localPosition = new Vector3(Mathf.Cos(angle) * schemaDistance, 0, Mathf.Sin(angle) * schemaDistance);
+                sun.GetComponent<Renderer>().material.color = Color.yellow;
+
                 AddSchemaParticleSystem(schemaCluster, GetSchemaColor(schemaIndex), 10f, 200);
                 if (useBoundarySpheres)
                 {
                     AddBoundarySphere(schemaCluster, 15f, GetSchemaColor(schemaIndex));
                 }
-                AddLabel(schemaCluster, schema.Name, 3f);
+                AddLabel(sun, $"Schema:\n{schema.Name}", 3f);
 
                 int tableIndex = 0;
                 float tableAngleStep = 360f / Mathf.Max(1, schema.Tables.Length);
@@ -59,7 +70,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 {
                     GameObject planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     planet.name = table.Name;
-                    planet.transform.localScale = Vector3.one * 5f; //Vector3.one * 3f;
+                    planet.transform.localScale = Vector3.one * 3f; //Vector3.one * 3f;
                     float planetAngle = tableIndex * tableAngleStep * Mathf.Deg2Rad;
                     float planetDistance = 5f + tableIndex * 3f; ; // planetSpacing + tableIndex * 5f;
                     planet.transform.SetParent(schemaCluster.transform);
@@ -69,16 +80,19 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                     AddLabel(planet, table.Name, 1.5f);
 
                     int columnIndex = 0;
+                    Vector3[] moonPositions = useUniformMoonDistribution
+                        ? GenerateFibonacciSpherePoints(table.Columns.Length, moonOrbitRadius)
+                        : GenerateRandomSpherePoints(table.Columns.Length, moonOrbitRadius);
+
                     foreach (Column column in table.Columns)
                     {
                         GameObject moon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                         moon.name = $"{column.Name} ({column.DataType})";
                         moon.transform.localScale = Vector3.one * 1f;
-                        float moonOrbitDistance = 1f + columnIndex * moonOrbitSpacing;
                         moon.transform.SetParent(planet.transform);
-                        moon.transform.localPosition = new Vector3(moonOrbitDistance, 0, 0);
+                        moon.transform.localPosition = moonPositions[columnIndex];
                         moon.GetComponent<Renderer>().material.color = GetColorForDataType(column.DataType);
-                        moon.AddComponent<Orbiter>().orbitSpeed = 50f;
+                        moon.AddComponent<Orbiter>().orbitSpeed = 5f;
                         AddLabel(moon, $"{column.Name} ({column.DataType})", 0.8f);
 
                         columnIndex++;
@@ -89,6 +103,38 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
             }
             databaseIndex++;
         }
+    }
+
+    private Vector3[] GenerateRandomSpherePoints(int count, float radius)
+    {
+        Vector3[] points = new Vector3[count];
+        for (int i = 0; i < count; i++)
+        {
+            float theta = Random.Range(0f, 2f * Mathf.PI);
+            float phi = Mathf.Acos(Random.Range(-1f, 1f));
+            float x = radius * Mathf.Sin(phi) * Mathf.Cos(theta);
+            float y = radius * Mathf.Sin(phi) * Mathf.Sin(theta);
+            float z = radius * Mathf.Cos(phi);
+            points[i] = new Vector3(x, y, z);
+        }
+        return points;
+    }
+
+    private Vector3[] GenerateFibonacciSpherePoints(int count, float radius)
+    {
+        Vector3[] points = new Vector3[count];
+        float offset = 2f / count;
+        float increment = Mathf.PI * (3f - Mathf.Sqrt(5f)); // Golden angle
+        for (int i = 0; i < count; i++)
+        {
+            float y = ((i * offset) - 1) + (offset / 2f);
+            float r = Mathf.Sqrt(1 - y * y);
+            float phi = i * increment;
+            float x = Mathf.Cos(phi) * r;
+            float z = Mathf.Sin(phi) * r;
+            points[i] = new Vector3(x, y, z) * radius;
+        }
+        return points;
     }
 
     private void AddGalaxyParticleSystem(GameObject galaxy, Color color, float radius, int maxParticles)
