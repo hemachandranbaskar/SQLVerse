@@ -1,0 +1,127 @@
+{
+    "Databases": [
+        {
+            "Name": "GalaxyDB1",
+            "Schemas": [
+                {
+                    "Name": "PublicSchema",
+                    "Tables": [
+                        {
+                            "Name": "Users",
+                            "Columns": [
+                                {
+                                    "Name": "UserID",
+                                    "DataType": "integer",
+                                    "IsPrimaryKey":  true
+                                },
+                                {
+                                    "Name": "Username",
+                                    "DataType": "string"
+                                },
+                                {
+                                    "Name": "Email",
+                                    "DataType": "string"
+                                },
+                                {
+                                    "Name": "IsActive",
+                                    "DataType": "boolean"
+                                }
+                            ]
+                        },
+                        {
+                            "Name": "Orders",
+                            "Columns": [
+                                {
+                                    "Name": "OrderID",
+                                    "DataType": "integer",
+                                    "IsPrimaryKey": true
+                                },
+                                {
+                                    "Name": "UserID",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "OrderDate",
+                                    "DataType": "string"
+                                },
+                                {
+                                    "Name": "TotalAmount",
+                                    "DataType": "float"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "Name": "AnalyticsSchema",
+                    "Tables": [
+                        {
+                            "Name": "UserActivity",
+                            "Columns": [
+                                {
+                                    "Name": "ActivityID",
+                                    "DataType": "integer",
+                                    "IsPrimaryKey": true
+                                },
+                                {
+                                    "Name": "UserID",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "ActivityType",
+                                    "DataType": "string"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "GalaxyDB2",
+            "Schemas": [
+                {
+                    "Name": "SalesSchema",
+                    "Tables": [
+                        {
+                            "Name": "Products",
+                            "Columns": [
+                                {
+                                    "Name": "ProductID",
+                                    "DataType": "integer",
+                                    "IsPrimaryKey": true
+                                },
+                                {
+                                    "Name": "ProductName",
+                                    "DataType": "string"
+                                },
+                                {
+                                    "Name": "Price",
+                                    "DataType": "float"
+                                }
+                            ]
+                        },
+                        {
+                            "Name": "Sales",
+                            "Columns": [
+                                {
+                                    "Name": "SaleID",
+                                    "DataType": "integer",
+                                    "IsPrimaryKey": true
+                                },
+                                {
+                                    "Name": "ProductID",
+                                    "DataType": "integer"
+                                },
+                                {
+                                    "Name": "Quantity",
+                                    "DataType": "integer"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

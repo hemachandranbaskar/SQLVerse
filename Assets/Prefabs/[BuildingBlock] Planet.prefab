@@ -77,7 +77,7 @@ MonoBehaviour:
   _twoGrabTransformer: {fileID: 7940630455592644162}
   _targetTransform: {fileID: 6310945161017845646}
   _maxGrabPoints: 1
-  _rigidbody: {fileID: 1445420541451312203}
+  _rigidbody: {fileID: 6765153788509097689}
   _kinematicWhileSelected: 1
   _throwWhenUnselected: 1
 --- !u!114 &7614473101500428144
@@ -97,7 +97,7 @@ MonoBehaviour:
   _maxSelectingInteractors: -1
   _data: {fileID: 7614473101500428144}
   _pointableElement: {fileID: 6286880837055553304}
-  _rigidbody: {fileID: 1445420541451312203}
+  _rigidbody: {fileID: 6765153788509097689}
   _physicsGrabbable: {fileID: 0}
   _resetGrabOnGrabsUpdated: 1
   _slippiness: 0
@@ -136,7 +136,7 @@ MonoBehaviour:
   _maxSelectingInteractors: -1
   _data: {fileID: 7117652708811286770}
   _pointableElement: {fileID: 6286880837055553304}
-  _rigidbody: {fileID: 1445420541451312203}
+  _rigidbody: {fileID: 6765153788509097689}
   _grabSource: {fileID: 6310945161017845646}
   _resetGrabOnGrabsUpdated: 1
   _physicsGrabbable: {fileID: 0}
@@ -244,8 +244,8 @@ GameObject:
   - component: {fileID: 8098058588809482484}
   - component: {fileID: 6478860035259038048}
   - component: {fileID: 5133868271144274973}
-  - component: {fileID: 1445420541451312203}
   - component: {fileID: 7832991787406283494}
+  - component: {fileID: 6765153788509097689}
   m_Layer: 0
   m_Name: '[BuildingBlock] Planet'
   m_TagString: Untagged
@@ -282,7 +282,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockId: 7358e191-33b7-43ca-b066-b2f00531ac66
-  instanceId: a7e6a631-03fa-4f63-ae9e-b97edf101391
+  instanceId: 15dae62a-6ed6-4cab-b3c6-f0c91796824f
   version: 1
   installationRoutineCheckpoint:
     _installationRoutineId: 
@@ -361,7 +361,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2, y: 2, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!54 &1445420541451312203
+--- !u!114 &7832991787406283494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5892002716734724941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 346dcbb868769cf4a8db8755a2729f0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orbitSpeed: 20
+--- !u!54 &6765153788509097689
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -384,20 +397,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!114 &7832991787406283494
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5892002716734724941}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 346dcbb868769cf4a8db8755a2729f0b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  orbitSpeed: 20
+  m_CollisionDetection: 3

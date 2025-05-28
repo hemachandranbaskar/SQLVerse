@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using Oculus.Interaction;
 
 public class DatabaseGalaxyGenerator : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     [SerializeField] private float moonOrbitRadius = .5f;
     [SerializeField] private Material pulsingOrbMaterial;
     [SerializeField] private GameObject planetInteractablePrefab;
+    [SerializeField] private QueryBuilder queryBuilder;
+    [SerializeField] private Material joinLineMaterial;
 
     private DatabaseRoot databaseRoot;
 
@@ -27,6 +30,11 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         {
             GenerateGalaxy();
         }
+    }
+
+    void Update()
+    {
+        UpdateQueryDisplay();
     }
 
     private void GenerateGalaxy()
@@ -73,7 +81,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 float tableAngleStep = 360f / Mathf.Max(1, schema.Tables.Length);
                 foreach (Table table in schema.Tables)
                 {
-                    GameObject planet = GameObject.CreatePrimitive(PrimitiveType.Sphere); //Instantiate(planetInteractablePrefab);
+                    GameObject planet = Instantiate(planetInteractablePrefab, Vector3.zero, Quaternion.identity); //GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     planet.name = table.Name;
                     planet.transform.localScale = Vector3.one * 3f; //Vector3.one * 3f;
                     float planetAngle = tableIndex * tableAngleStep * Mathf.Deg2Rad;
@@ -83,6 +91,28 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                     planet.GetComponent<Renderer>().material.color = Color.blue;
                     planet.AddComponent<Orbiter>().orbitSpeed = 20f;
                     AddLabel(planet, table.Name, 1.5f);
+                    planet.tag = "Planet";
+
+                    var distanceGrab = planet.GetComponentInChildren<DistanceGrabInteractable>();
+                    if (distanceGrab != null)
+                    {
+                        // Subscribe to WhenPointerEventRaised to detect select/unselect
+                        distanceGrab.WhenPointerEventRaised += (PointerEvent evt) =>
+                        {
+                            if (evt.Type == PointerEventType.Select)
+                            {
+                                OnPlanetGrabbed(planet);
+                            }
+                            else if (evt.Type == PointerEventType.Unselect)
+                            {
+                                OnPlanetReleased(planet);
+                            }
+                        };
+                    }
+                    else
+                    {
+                        Debug.LogError($"DistanceGrabInteractable component not found on planet {planet.name}. Ensure the prefab is correctly configured.");
+                    }
 
                     int columnIndex = 0;
                     Vector3[] moonPositions = useUniformMoonDistribution
@@ -109,6 +139,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
 
                         AddLabel(moon, $"{column.Name} ({column.DataType})", 0.8f);
                         //AddLabel(moon, $"{column.Name} ({column.DataType})" + (columnIndex == 0 ? " (Primary Key)" : ""), 0.8f);
+                        moon.tag = "Moon";
 
                         columnIndex++;
                     }
@@ -117,6 +148,40 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 schemaIndex++;
             }
             databaseIndex++;
+        }
+    }
+
+    private void OnPlanetGrabbed(GameObject planet)
+    {
+        if (queryBuilder != null)
+        {
+            GameObject clone = Instantiate(planet, planet.transform.position, planet.transform.rotation);
+            clone.transform.localScale *= 0.2f; // Reduce size to 20%
+            clone.name = $"{planet.name}_Clone";
+            var distanceGrab = clone.GetComponentInChildren<DistanceGrabInteractable>();
+            if (distanceGrab != null)
+            {
+                distanceGrab.enabled = true;
+            }
+
+            // Disable original interaction and reset position
+            planet.GetComponentInChildren<DistanceGrabInteractable>().enabled = false;
+            planet.GetComponent<Orbiter>().enabled = true;
+            planet.transform.position = planet.transform.parent.position;
+
+            // Notify QueryBuilder
+            queryBuilder.OnPlanetGrabbed(clone);
+            UpdateQueryDisplay();
+        }
+    }
+
+    private void OnPlanetReleased(GameObject planet)
+    {
+        if (queryBuilder != null)
+        {
+            queryBuilder.OnPlanetReleased(planet);
+            UpdateQueryDisplay();
+            // Clean up clone (assumed handled by QueryBuilder or destroyed elsewhere)
         }
     }
 
@@ -134,6 +199,40 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         material.SetColor("_EmissionColor", baseColor * 2f);
         material.EnableKeyword("_EMISSION");
         renderer.material = material;
+    }
+
+    private void CreateJoinLine(GameObject moon1, GameObject moon2)
+    {
+        GameObject lineObj = new GameObject("JoinLine");
+        LineRenderer lineRenderer = lineObj.AddComponent<LineRenderer>();
+        lineRenderer.material = joinLineMaterial;
+        lineRenderer.startColor = Color.yellow;
+        lineRenderer.endColor = Color.yellow;
+        lineRenderer.startWidth = 0.1f;
+        lineRenderer.endWidth = 0.1f;
+        lineRenderer.positionCount = 2;
+        lineRenderer.SetPosition(0, moon1.transform.position);
+        lineRenderer.SetPosition(1, moon2.transform.position);
+        StartCoroutine(UpdateJoinLine(lineObj, moon1, moon2));
+    }
+
+    private IEnumerator UpdateJoinLine(GameObject lineObj, GameObject moon1, GameObject moon2)
+    {
+        LineRenderer lineRenderer = lineObj.GetComponent<LineRenderer>();
+        while (true)
+        {
+            lineRenderer.SetPosition(0, moon1.transform.position);
+            lineRenderer.SetPosition(1, moon2.transform.position);
+            yield return null;
+        }
+    }
+
+    private void UpdateQueryDisplay()
+    {
+        if (queryBuilder != null)
+        {
+            queryBuilder.UpdateQueryDisplay();
+        }
     }
 
     private IEnumerator PulseOrb(GameObject moon)
