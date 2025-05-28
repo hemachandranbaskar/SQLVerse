@@ -9,6 +9,8 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     [SerializeField] private bool useUniformMoonDistribution = true;
     [SerializeField] private float moonOrbitRadius = .5f;
     [SerializeField] private Material pulsingOrbMaterial;
+    [SerializeField] private GameObject planetInteractablePrefab;
+
     private DatabaseRoot databaseRoot;
 
     void Start()
@@ -71,7 +73,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 float tableAngleStep = 360f / Mathf.Max(1, schema.Tables.Length);
                 foreach (Table table in schema.Tables)
                 {
-                    GameObject planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    GameObject planet = GameObject.CreatePrimitive(PrimitiveType.Sphere); //Instantiate(planetInteractablePrefab);
                     planet.name = table.Name;
                     planet.transform.localScale = Vector3.one * 3f; //Vector3.one * 3f;
                     float planetAngle = tableIndex * tableAngleStep * Mathf.Deg2Rad;
