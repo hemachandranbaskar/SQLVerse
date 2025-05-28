@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using Oculus.Interaction;
+using System.Collections.Generic;
 
 public class DatabaseGalaxyGenerator : MonoBehaviour
 {
@@ -13,6 +14,14 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     [SerializeField] private GameObject planetInteractablePrefab;
     [SerializeField] private QueryBuilder queryBuilder;
     [SerializeField] private Material joinLineMaterial;
+
+    //Testing
+    [SerializeField] private GameObject orderPlanet;
+    [SerializeField] private GameObject userPlanet;
+    [SerializeField] private GameObject orderPlanetUserIdMoon;
+    [SerializeField] private GameObject userPlanetUserIdMoon;
+    private List<GameObject> selectedMoons = new List<GameObject>();
+    private List<(GameObject moon1, GameObject moon2)> joins = new List<(GameObject, GameObject)>();
 
     private DatabaseRoot databaseRoot;
 
@@ -30,12 +39,73 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         {
             GenerateGalaxy();
         }
+
+        SubscribeToPlanetGrabAndRelease(orderPlanet);
+        SubscribeToPlanetGrabAndRelease(userPlanet);
+        subscribeToMoonGrabAndRelease(orderPlanetUserIdMoon);
+        subscribeToMoonGrabAndRelease(userPlanetUserIdMoon);
     }
 
-    void Update()
+    private void subscribeToMoonGrabAndRelease(GameObject moon)
     {
-        UpdateQueryDisplay();
+        //var moonCollider = moon.GetComponent<SphereCollider>();
+        //if (moonCollider == null)
+        //{
+        //    moonCollider = moon.AddComponent<SphereCollider>();
+        //}
+        //var moonRigidbody = moon.GetComponent<Rigidbody>();
+        //if (moonRigidbody == null)
+        //{
+        //    moonRigidbody = moon.AddComponent<Rigidbody>();
+        //    moonRigidbody.useGravity = false;
+        //    moonRigidbody.isKinematic = false;
+        //}
+        //var moonDistanceGrab = moon.AddComponent<DistanceGrabInteractable>();
+        //moonDistanceGrab.InjectRigidbody(moonRigidbody);
+
+        // Subscribe to moon grab events
+        var moonDistanceGrab = moon.GetComponentInChildren<DistanceGrabInteractable>();
+        moonDistanceGrab.WhenPointerEventRaised += (PointerEvent evt) =>
+        {
+            if (evt.Type == PointerEventType.Select)
+            {
+                OnMoonGrabbed(moon);
+            }
+            else if (evt.Type == PointerEventType.Unselect)
+            {
+                OnMoonReleased(moon);
+            }
+        };
     }
+
+    private void SubscribeToPlanetGrabAndRelease(GameObject planet)
+    {
+        var planetDistanceGrab = planet.GetComponentInChildren<DistanceGrabInteractable>();
+        if (planetDistanceGrab != null)
+        {
+            planetDistanceGrab.WhenPointerEventRaised += (PointerEvent evt) =>
+            {
+                if (evt.Type == PointerEventType.Select)
+                {
+                    OnPlanetGrabbed(planet);
+                }
+                else if (evt.Type == PointerEventType.Unselect)
+                {
+                    OnPlanetReleased(planet);
+                }
+            };
+        }
+        else
+        {
+            Debug.LogError($"DistanceGrabInteractable component not found on planet {planet.name}. Ensure the prefab is correctly configured.");
+        }
+    }
+
+
+    //void Update()
+    //{
+    //    UpdateQueryDisplay();
+    //}
 
     private void GenerateGalaxy()
     {
@@ -137,6 +207,35 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                             moon.name += " (Primary Key)";
                         }
 
+                        //******************* UNCOMMENT LATER ************************
+                        /*var moonCollider = moon.GetComponent<SphereCollider>();
+                        if (moonCollider == null)
+                        {
+                            moonCollider = moon.AddComponent<SphereCollider>();
+                        }
+                        var moonRigidbody = moon.GetComponent<Rigidbody>();
+                        if (moonRigidbody == null)
+                        {
+                            moonRigidbody = moon.AddComponent<Rigidbody>();
+                            moonRigidbody.useGravity = false;
+                            moonRigidbody.isKinematic = false;
+                        }
+                        var moonDistanceGrab = moon.AddComponent<DistanceGrabInteractable>();
+                        moonDistanceGrab.InjectRigidbody(moonRigidbody);
+
+                        // Subscribe to moon grab events
+                        moonDistanceGrab.WhenPointerEventRaised += (PointerEvent evt) =>
+                        {
+                            if (evt.Type == PointerEventType.Select)
+                            {
+                                OnMoonGrabbed(moon);
+                            }
+                            else if (evt.Type == PointerEventType.Unselect)
+                            {
+                                OnMoonReleased(moon);
+                            }
+                        };*/
+
                         AddLabel(moon, $"{column.Name} ({column.DataType})", 0.8f);
                         //AddLabel(moon, $"{column.Name} ({column.DataType})" + (columnIndex == 0 ? " (Primary Key)" : ""), 0.8f);
                         moon.tag = "Moon";
@@ -171,7 +270,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
 
             // Notify QueryBuilder
             queryBuilder.OnPlanetGrabbed(clone);
-            UpdateQueryDisplay();
+            //UpdateQueryDisplay();
         }
     }
 
@@ -180,9 +279,32 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         if (queryBuilder != null)
         {
             queryBuilder.OnPlanetReleased(planet);
-            UpdateQueryDisplay();
+            //UpdateQueryDisplay();
             // Clean up clone (assumed handled by QueryBuilder or destroyed elsewhere)
         }
+    }
+
+    private void OnMoonGrabbed(GameObject moon)
+    {
+        if (!selectedMoons.Contains(moon))
+        {
+            selectedMoons.Add(moon);
+            Debug.Log($"Moon grabbed: {moon.name}. Total selected: {selectedMoons.Count}");
+
+            // If we have two moons selected, create a join
+            if (selectedMoons.Count == 2)
+            {
+                GameObject moon1 = selectedMoons[0];
+                GameObject moon2 = selectedMoons[1];
+                CreateJoin(moon1, moon2);
+                selectedMoons.Clear(); // Reset selection
+            }
+        }
+    }
+
+    private void OnMoonReleased(GameObject moon)
+    {
+        // Optionally, you can handle release logic here (e.g., allow breaking joins)
     }
 
     private void SetGlowingMaterial(GameObject moon, Color baseColor)
@@ -199,6 +321,24 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         material.SetColor("_EmissionColor", baseColor * 2f);
         material.EnableKeyword("_EMISSION");
         renderer.material = material;
+    }
+
+    private void CreateJoin(GameObject moon1, GameObject moon2)
+    {
+        // Store the join relationship
+        joins.Add((moon1, moon2));
+
+        // Draw the visual bridge
+        CreateJoinLine(moon1, moon2);
+
+        // Update QueryBuilder with the join
+        if (queryBuilder != null)
+        {
+            queryBuilder.AddJoin(moon1, moon2);
+            //UpdateQueryDisplay();
+        }
+
+        Debug.Log($"Join created between {moon1.name} and {moon2.name}");
     }
 
     private void CreateJoinLine(GameObject moon1, GameObject moon2)
@@ -227,13 +367,13 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         }
     }
 
-    private void UpdateQueryDisplay()
-    {
-        if (queryBuilder != null)
-        {
-            queryBuilder.UpdateQueryDisplay();
-        }
-    }
+    //private void UpdateQueryDisplay()
+    //{
+    //    if (queryBuilder != null)
+    //    {
+    //        queryBuilder.UpdateQueryDisplay();
+    //    }
+    //}
 
     private IEnumerator PulseOrb(GameObject moon)
     {
