@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 public class DatabaseGalaxyGenerator : MonoBehaviour
 {
+    public static DatabaseGalaxyGenerator Instance { get; private set; }
+
     [SerializeField] private string jsonFileName = "SampleDatabase";
     [SerializeField] private bool useBoundarySpheres = false;
     [SerializeField] private bool useUniformMoonDistribution = true;
@@ -26,6 +28,11 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     private Dictionary<GameObject, Vector3> originalMoonScales = new Dictionary<GameObject, Vector3>();
 
     private DatabaseRoot databaseRoot;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
@@ -163,6 +170,14 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                     planet.AddComponent<Orbiter>().orbitSpeed = 20f;
                     AddLabel(planet, table.Name, 3f);
                     planet.tag = "Planet";
+
+                    //planet.AddComponent<RayInteractable>();
+                    //var selector = planet.AddComponent<SelectorUnityEventWrapper>();
+                    //selector.WhenSelected.AddListener(() =>
+                    //{
+                    //    MoonSelector.SetFocusedPlanet(planet);
+                    //    Debug.Log("Focused planet set to: " + planet.name);
+                    //});
 
                     var distanceGrab = planet.GetComponentInChildren<DistanceGrabInteractable>();
                     if (distanceGrab != null)
@@ -446,6 +461,10 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         }
     }
 
+    public void OnMoonSelected(GameObject moon)
+    {
+        OnMoonSelected(new PointerEvent(0, PointerEventType.Select, Pose.identity, null), moon);
+    }
     private void OnMoonSelected(PointerEvent evt, GameObject moon)
     {
         if (evt.Type != PointerEventType.Select) return;
@@ -464,7 +483,15 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
             {
                 GameObject moon1 = selectedMoons[0];
                 GameObject moon2 = selectedMoons[1];
-                CreateJoin(moon1, moon2);
+                if (moon1.transform.parent == moon2.transform.parent)
+                {
+                    Debug.LogWarning("Cannot join two columns from the same table.");
+                    return;
+                }
+                else
+                {
+                    CreateJoin(moon1, moon2);
+                }
                 selectedMoons.Clear(); // Reset selection
 
                 // Reset highlights
