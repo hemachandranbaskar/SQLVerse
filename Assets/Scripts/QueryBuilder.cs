@@ -30,6 +30,27 @@ public class QueryBuilder : MonoBehaviour
         }
     }
 
+    public void OnPlanetSnapped(GameObject planetClone)
+    {
+        if (!selectedPlanets.Contains(planetClone))
+        {
+            selectedPlanets.Add(planetClone);
+            Debug.Log($"QueryBuilder: {planetClone.name} snapped to platform.");
+            UpdateQueryDisplay();
+        }
+    }
+
+    public void OnPlanetUnsnapped(GameObject planetClone)
+    {
+        if (selectedPlanets.Contains(planetClone))
+        {
+            selectedPlanets.Remove(planetClone);
+            Debug.Log($"QueryBuilder: {planetClone.name} unsnapped from platform.");
+            Destroy(planetClone); // Clean up the clone
+            UpdateQueryDisplay();
+        }
+    }
+
     public void AddJoin(GameObject moon1, GameObject moon2)
     {
         // Ensure the parent tables of both moons are selected

@@ -117,6 +117,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         foreach (Database db in databaseRoot.Databases)
         {
             GameObject galaxy = new GameObject(db.Name);
+            galaxy.transform.parent = transform;
             galaxy.transform.position = new Vector3(databaseIndex * galaxySpacing, 0, 0);
             AddGalaxyParticleSystem(galaxy, Color.white, 50f, 2000);
             AddLabel(galaxy, $"Database:\n{db.Name}", 10f);
@@ -255,18 +256,60 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
         if (queryBuilder != null)
         {
             GameObject clone = Instantiate(planet, planet.transform.position, planet.transform.rotation);
-            clone.transform.localScale *= 0.2f; // Reduce size to 20%
+            //clone.transform.localScale *= 0.2f; // Reduce size to 20%
             clone.name = $"{planet.name}_Clone";
-            var distanceGrab = clone.GetComponentInChildren<DistanceGrabInteractable>();
-            if (distanceGrab != null)
+
+            // Scale only the planet's mesh, not its children (moons)
+            Transform planetMesh = clone.transform.Find("Sphere"); // Adjust if your planetInteractablePrefab has a different child name
+            if (planetMesh != null)
             {
-                distanceGrab.enabled = true;
+                planetMesh.localScale *= 0.2f;
+            }
+            else
+            {
+                clone.transform.localScale *= 0.2f; // Fallback to scaling the entire object
             }
 
-            // Disable original interaction and reset position
-            planet.GetComponentInChildren<DistanceGrabInteractable>().enabled = false;
-            planet.GetComponent<Orbiter>().enabled = true;
-            planet.transform.position = planet.transform.parent.position;
+            // Disable Orbiter on the clone to prevent unwanted orbiting
+            var cloneOrbiter = clone.GetComponent<Orbiter>();
+            if (cloneOrbiter != null) cloneOrbiter.enabled = false;
+
+            // Ensure the clone has a Rigidbody and DistanceGrabInteractable
+            var cloneRigidbody = clone.GetComponent<Rigidbody>();
+            if (cloneRigidbody == null)
+            {
+                cloneRigidbody = clone.AddComponent<Rigidbody>();
+                cloneRigidbody.useGravity = false;
+                cloneRigidbody.isKinematic = false;
+                cloneRigidbody.interpolation = RigidbodyInterpolation.Interpolate; // Smooth movement
+            }
+
+            var cloneDistanceGrab = clone.GetComponentInChildren<DistanceGrabInteractable>();
+            if (cloneDistanceGrab == null)
+            {
+                cloneDistanceGrab = clone.AddComponent<DistanceGrabInteractable>();
+                cloneDistanceGrab.InjectRigidbody(cloneRigidbody);
+
+            }
+            cloneDistanceGrab.enabled = true;
+
+            // Temporarily disable interaction on the original planet
+            var originalDistanceGrab = planet.GetComponentInChildren<DistanceGrabInteractable>();
+            if (originalDistanceGrab != null)
+            {
+                originalDistanceGrab.enabled = false;
+                // Re-enable after a delay to allow re-grabbing
+                StartCoroutine(ReEnableGrab(planet, 1f));
+            }
+
+            // Maintain original planet's orbit
+            var originalOrbiter = planet.GetComponent<Orbiter>();
+            if (originalOrbiter != null) originalOrbiter.enabled = true;
+
+            //// Disable original interaction and reset position
+            //planet.GetComponentInChildren<DistanceGrabInteractable>().enabled = false;
+            //planet.GetComponent<Orbiter>().enabled = true;
+            //planet.transform.position = planet.transform.parent.position;
 
             // Notify QueryBuilder
             queryBuilder.OnPlanetGrabbed(clone);
@@ -281,6 +324,27 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
             queryBuilder.OnPlanetReleased(planet);
             //UpdateQueryDisplay();
             // Clean up clone (assumed handled by QueryBuilder or destroyed elsewhere)
+        }
+        // Re-enable the original planet's grab interaction
+        string originalPlanetName = planet.name.Replace("_Clone", "");
+        GameObject originalPlanet = GameObject.Find(originalPlanetName);
+        if (originalPlanet != null)
+        {
+            var distanceGrab = originalPlanet.GetComponentInChildren<DistanceGrabInteractable>();
+            if (distanceGrab != null)
+            {
+                distanceGrab.enabled = true;
+            }
+        }
+    }
+
+    private IEnumerator ReEnableGrab(GameObject planet, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        var distanceGrab = planet.GetComponentInChildren<DistanceGrabInteractable>();
+        if (distanceGrab != null)
+        {
+            distanceGrab.enabled = true;
         }
     }
 
