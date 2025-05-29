@@ -4,11 +4,16 @@ using TMPro;
 using System.Collections.Generic;
 using System.Text;
 using System;
+using UnityEngine.UI.TableUI;
+using Newtonsoft.Json;
+using System.Linq;
 
 public class QueryBuilder : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI queryTextDisplay;
     [SerializeField] private TextMeshProUGUI resultTextDisplay;
+    [SerializeField] private TableUI resultsTable;
+
     private List<GameObject> selectedPlanets = new List<GameObject>();
     private Dictionary<GameObject, List<GameObject>> joinPairs = new Dictionary<GameObject, List<GameObject>>();
 
@@ -118,16 +123,16 @@ public class QueryBuilder : MonoBehaviour
             }
         }
 
-        if (selectedColumns.Count > 0)
-        {
-            sqlQuery.Append(string.Join(", ", selectedColumns));
-        }
-        else
-        {
-            sqlQuery.Append("*"); // Default to all columns if none are explicitly selected
-        }
+        //if (selectedColumns.Count > 0)
+        //{
+        //    sqlQuery.Append(string.Join(", ", selectedColumns));
+        //}
+        //else
+        //{
+        //    sqlQuery.Append("*"); // Default to all columns if none are explicitly selected
+        //}
 
-        sqlQuery.Append(" FROM ");
+        sqlQuery.Append("* FROM ");
 
         // Collect tables and their schemas
         List<string> selectedTables = new List<string>();
@@ -202,6 +207,7 @@ public class QueryBuilder : MonoBehaviour
                 string jsonResult = www.downloadHandler.text;
                 Debug.Log($"QueryBuilder: Query executed successfully: {jsonResult}");
                 DisplayResults(jsonResult);
+                DisplayResultsInTable(jsonResult);
             }
             else
             {
@@ -223,6 +229,77 @@ public class QueryBuilder : MonoBehaviour
             return moonName.Substring(0, spaceIndex);
         }
         return moonName;
+    }
+
+    private void DisplayResultsInTable(string jsonResult)
+    {
+        if (resultsTable == null)
+        {
+            Debug.LogWarning("QueryBuilder: Results Table UI is not assigned!");
+            // Fallback to text display
+            DisplayResults(jsonResult);
+            return;
+        }
+
+        try
+        {
+            // Parse JSON array
+            var jsonArray = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(jsonResult);
+
+            if (jsonArray == null || jsonArray.Count == 0)
+            {
+                //// Show empty result message
+                //resultsTable.Rows = 2;
+                //resultsTable.Columns = 1;
+                //resultsTable.ShowHeader = true;
+                resultsTable.GetCell(0, 0).text = "Results";
+                resultsTable.GetCell(1, 0).text = "No results found";
+                return;
+            }
+
+            // Get column names from first row
+            var firstRow = jsonArray[0];
+            var columnNames = firstRow.Keys.ToList();
+
+            //// Set table dimensions
+            //resultsTable.Columns = columnNames.Count;
+            //resultsTable.Rows = jsonArray.Count + 1; // +1 for header
+            //resultsTable.ShowHeader = true;
+
+            // Set column headers
+            for (int col = 0; col < columnNames.Count; col++)
+            {
+                resultsTable.GetCell(0, col).text = columnNames[col];
+            }
+
+            // Populate data rows
+            for (int row = 0; row < jsonArray.Count; row++)
+            {
+                var rowData = jsonArray[row];
+                for (int col = 0; col < columnNames.Count; col++)
+                {
+                    string columnName = columnNames[col];
+                    string cellValue = rowData.ContainsKey(columnName) ?
+                        (rowData[columnName]?.ToString() ?? "NULL") : "NULL";
+
+                    resultsTable.GetCell(row + 1, col).text = cellValue;
+                }
+            }
+
+            // Update result text display with summary
+            if (resultTextDisplay != null)
+            {
+                resultTextDisplay.text = $"Query Results: {jsonArray.Count} rows returned";
+            }
+
+            Debug.Log($"QueryBuilder: Successfully populated table with {jsonArray.Count} rows and {columnNames.Count} columns");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"QueryBuilder: Failed to parse JSON results: {ex.Message}");
+            // Fallback to original text display
+            DisplayResults(jsonResult);
+        }
     }
 
     private void DisplayResults(string jsonResult)

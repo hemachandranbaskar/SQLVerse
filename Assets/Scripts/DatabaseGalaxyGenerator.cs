@@ -12,6 +12,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
     [SerializeField] private float moonOrbitRadius = .5f;
     [SerializeField] private Material pulsingOrbMaterial;
     [SerializeField] private GameObject planetInteractablePrefab;
+    [SerializeField] private GameObject moonInteractablePrefab;
     [SerializeField] private QueryBuilder queryBuilder;
     [SerializeField] private Material joinLineMaterial;
 
@@ -146,7 +147,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                 {
                     AddBoundarySphere(schemaCluster, 15f, GetSchemaColor(schemaIndex));
                 }
-                AddLabel(sun, $"Schema:\n{schema.Name}", 3f);
+                AddLabel(sun, $"Schema:\n{schema.Name}", 5f);
 
                 int tableIndex = 0;
                 float tableAngleStep = 360f / Mathf.Max(1, schema.Tables.Length);
@@ -161,7 +162,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                     planet.transform.localPosition = new Vector3(Mathf.Cos(planetAngle) * planetDistance, 0, Mathf.Sin(planetAngle) * planetDistance);
                     planet.GetComponent<Renderer>().material.color = Color.blue;
                     planet.AddComponent<Orbiter>().orbitSpeed = 20f;
-                    AddLabel(planet, table.Name, 1.5f);
+                    AddLabel(planet, table.Name, 3f);
                     planet.tag = "Planet";
 
                     var distanceGrab = planet.GetComponentInChildren<DistanceGrabInteractable>();
@@ -192,7 +193,7 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
 
                     foreach (Column column in table.Columns)
                     {
-                        GameObject moon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        GameObject moon = Instantiate(moonInteractablePrefab, Vector3.zero, Quaternion.identity); //GameObject.CreatePrimitive(PrimitiveType.Sphere);
                         moon.name = $"{column.Name} ({column.DataType})";
                         moon.transform.localScale = Vector3.one * 1f;
                         moon.transform.SetParent(planet.transform);
@@ -237,9 +238,30 @@ public class DatabaseGalaxyGenerator : MonoBehaviour
                             }
                         };*/
 
-                        AddLabel(moon, $"{column.Name} ({column.DataType})", 0.8f);
+                        AddLabel(moon, $"{column.Name} ({column.DataType})", 2f);
                         //AddLabel(moon, $"{column.Name} ({column.DataType})" + (columnIndex == 0 ? " (Primary Key)" : ""), 0.8f);
                         moon.tag = "Moon";
+
+                        var moonDistanceGrab = moon.GetComponentInChildren<DistanceGrabInteractable>();
+                        if (moonDistanceGrab != null)
+                        {
+                            // Subscribe to WhenPointerEventRaised to detect select/unselect
+                            moonDistanceGrab.WhenPointerEventRaised += (PointerEvent evt) =>
+                            {
+                                if (evt.Type == PointerEventType.Select)
+                                {
+                                    OnPlanetGrabbed(moon);
+                                }
+                                else if (evt.Type == PointerEventType.Unselect)
+                                {
+                                    OnPlanetReleased(moon);
+                                }
+                            };
+                        }
+                        else
+                        {
+                            Debug.LogError($"DistanceGrabInteractable component not found on moon {moon.name}. Ensure the prefab is correctly configured.");
+                        }
 
                         columnIndex++;
                     }
