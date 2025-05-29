@@ -1,11 +1,14 @@
 using UnityEngine;
+using UnityEngine.Networking;
 using TMPro;
 using System.Collections.Generic;
 using System.Text;
+using System;
 
 public class QueryBuilder : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI queryTextDisplay;
+    [SerializeField] private TextMeshProUGUI resultTextDisplay;
     private List<GameObject> selectedPlanets = new List<GameObject>();
     private Dictionary<GameObject, List<GameObject>> joinPairs = new Dictionary<GameObject, List<GameObject>>();
 
@@ -132,7 +135,7 @@ public class QueryBuilder : MonoBehaviour
         foreach (GameObject planet in selectedPlanets)
         {
             string tableName = planet.name.Replace("_Clone", "");
-            string schemaName = "RetailStore";// planet.transform.parent.name; // Schema is the parent of the planet
+            string schemaName = "PublicSchema";// planet.transform.parent.name; // Schema is the parent of the planet
             selectedTables.Add(tableName);
             tableToSchema[tableName] = schemaName;
         }
@@ -174,6 +177,43 @@ public class QueryBuilder : MonoBehaviour
         return sqlQuery.ToString();
     }
 
+    public void ExecuteQuery()
+    {
+        var sqlQuery = queryTextDisplay.text;
+        StartCoroutine(SendQueryToAPI(sqlQuery));
+    }
+
+    private System.Collections.IEnumerator SendQueryToAPI(string sqlQuery)
+    {
+        string apiUrl = "http://localhost:3000/query";
+        string jsonPayload = $"{{\"query\":\"{sqlQuery.Replace("\"", "\\\"")}\"}}";
+
+        using (UnityWebRequest www = new UnityWebRequest(apiUrl, "POST"))
+        {
+            byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(jsonPayload);
+            www.uploadHandler = new UploadHandlerRaw(jsonToSend);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                string jsonResult = www.downloadHandler.text;
+                Debug.Log($"QueryBuilder: Query executed successfully: {jsonResult}");
+                DisplayResults(jsonResult);
+            }
+            else
+            {
+                Debug.LogError($"QueryBuilder: Query execution failed: {www.error}");
+                if (resultTextDisplay != null)
+                {
+                    resultTextDisplay.text = $"Error executing query: {www.error}";
+                }
+            }
+        }
+    }
+
     private string ExtractColumnName(string moonName)
     {
         // Extracts the column name from a moon's name (e.g., "id (integer) (Primary Key)" -> "id")
@@ -183,5 +223,34 @@ public class QueryBuilder : MonoBehaviour
             return moonName.Substring(0, spaceIndex);
         }
         return moonName;
+    }
+
+    private void DisplayResults(string jsonResult)
+    {
+        if (resultTextDisplay == null)
+        {
+            Debug.LogWarning("QueryBuilder: Result Text Display is not assigned in QueryBuilder!");
+            return;
+        }
+
+        StringBuilder resultText = new StringBuilder();
+        resultText.AppendLine("Query Results:");
+
+        jsonResult = jsonResult.Trim('[', ']');
+        if (string.IsNullOrEmpty(jsonResult))
+        {
+            resultText.AppendLine("No results found.");
+        }
+        else
+        {
+            string[] rows = jsonResult.Split(new string[] { "},{" }, StringSplitOptions.None);
+            foreach (string row in rows)
+            {
+                string cleanRow = row.Trim('{', '}');
+                resultText.AppendLine(cleanRow);
+            }
+        }
+
+        resultTextDisplay.text = resultText.ToString();
     }
 }
